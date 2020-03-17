@@ -10,7 +10,7 @@ class ApplicationController < ActionController::Base
       if @current_user && @current_user.token != session[:session_token]
         render json: { message: 'Wrong token was given to user' }
       end
-    end 
+    end
     # Check the token
     render json: { message: 'Guest user can not perform this action, sign in' }, status: 401 unless @current_user
   end

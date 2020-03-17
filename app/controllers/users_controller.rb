@@ -46,6 +46,8 @@ class UsersController < ApplicationController
   end
 
   def render_user_json(user)
+    # TODO: the next line still doesn't work
+    # render json: ::Presenters::PrepareUserForJson.new(user).generate
     render json: user, except: %i[created_at updated_at password_digest token]
   end
 end

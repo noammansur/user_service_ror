@@ -25,7 +25,8 @@ class SessionsController < ApplicationController
     end
     user = User.find_by_id(session[:user_id])
     user.update(token: nil)
-    session.delete(:user_id :session_token)
+    session.delete(:user_id)
+    session.delete(:session_token)
     render json: { message: 'Signed out' }
   end
 end
