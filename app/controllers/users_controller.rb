@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class UsersController < ApplicationController
+  skip_before_action :verify_authenticity_token
+  before_action :validate_authenticated, only: [:update]
+
   def index
     @users = User.all
     render_user_json @users
@@ -28,11 +31,6 @@ class UsersController < ApplicationController
   end
 
   def update
-    if @current_user.nil?
-      render json: { message: 'User is not autorized to perform this action', s: session}, status: 401
-      return
-    end
-
     if @current_user.update(user_params)
       render_user_json @current_user
     else
@@ -48,6 +46,6 @@ class UsersController < ApplicationController
   end
 
   def render_user_json(user)
-    render json: user, except: %i[created_at updated_at password_digest]
+    render json: user, except: %i[created_at updated_at password_digest token]
   end
 end
