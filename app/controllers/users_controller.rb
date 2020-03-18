@@ -6,7 +6,8 @@ class UsersController < ApplicationController
 
   def index
     @users = User.all
-    render_user_json @users
+    render json: @users.map {|user|
+      ::Presenters::User::UserPresenter.new(user).generate }
   end
 
   def show
@@ -41,13 +42,10 @@ class UsersController < ApplicationController
   private
 
   def user_params
-    # TODO: understand why that don't work: params.require(:user).permit(:first_name, :last_name, :email)
     params.permit(:first_name, :last_name, :email, :password)
   end
 
   def render_user_json(user)
-    # TODO: the next line still doesn't work
-    # render json: ::Presenters::PrepareUserForJson.new(user).generate
-    render json: user, except: %i[created_at updated_at password_digest token]
+    render json: ::Presenters::User::UserPresenter.new(user).generate
   end
 end
