@@ -2,12 +2,13 @@
 
 class UsersController < ApplicationController
   skip_before_action :verify_authenticity_token
-  before_action :validate_authenticated, only: [:update]
+  before_action :validate_authenticated, only: %i[update show]
 
   def index
     @users = User.all
-    render json: @users.map {|user|
-      ::Presenters::User::UserPresenter.new(user).generate }
+    render json: @users.map { |user|
+                   ::Presenters::User::UserPresenter.new(user).generate
+                 }
   end
 
   def show
@@ -17,35 +18,49 @@ class UsersController < ApplicationController
       return
     end
 
-    render_user_json @user
+    render json: ::Presenters::User::UserPresenter.new(@user).generate
   end
 
   def create
-    @user = User.new(user_params)
-    @user.email.downcase!
-
-    if @user.save
-      render_user_json @user
-    else
-      render json: { message: 'user can not be added', errors: @user.errors }
-    end
+    user = ::Contexts::Users::UserContext.new.register(params)
+    present_based_on_errors(user)
   end
 
   def update
-    if @current_user.update(user_params)
-      render_user_json @current_user
+    user = ::Contexts::Users::UserContext.new.update(params)
+    present_based_on_errors(user)
+  end
+
+  def sign_in
+    user = ::Contexts::Users::UserContext.new.sign_in(params[:email], params[:password], session)
+    if user
+      render json: { message: 'Logged in succesfully', user_id: user.id }
     else
-      render json: { message: 'user can not be updated', errors: @current_user.errors }
+      render json: { message: 'Autentication failed' }
     end
+  end
+
+  def sign_out
+    ::Contexts::Users::UserContext.new.sign_out(session)
+    render json: { message: 'Signed out' }
   end
 
   private
 
-  def user_params
-    params.permit(:first_name, :last_name, :email, :password)
+  def validate_authenticated
+    @user = User.find_by_id(params.fetch(:id))
+
+    unless @user && @user.token == session[:session_token]
+      render nothing: true, status: :unauthorized
+      return
+    end
   end
 
-  def render_user_json(user)
-    render json: ::Presenters::User::UserPresenter.new(user).generate
+  def present_based_on_errors(user)
+    if user.errors.empty?
+      render json: ::Presenters::User::UserPresenter.new(user).generate
+    else
+      render json: { message: 'Action can not be performed', errors: user.errors }
+    end
   end
 end
